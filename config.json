@@ -1,0 +1,20 @@
+{
+  "name": "AP_BILLING_TOOLS",
+  "stable-version": "1.0.1",
+  "testers-version": "1.0.1",
+  "insiders-version": "1.0.1",
+  "description": "BILLING TOOLS FOR AP",
+  "developers": [
+    "DLEHN01",
+    "NACKE08"
+  ],
+  "testers": [
+    "NACKE08",
+    "DLEHN01"
+  ],
+  "insiders": [
+    "NACKE08"
+  ],
+  "author": "NICHOLAS ACKERMAN",
+  "license": "MIT"
+}

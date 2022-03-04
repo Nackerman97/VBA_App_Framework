@@ -42,7 +42,7 @@ Every time a user opens up the main form in AP_BILLING_TOOLS it call a global fu
 
 ## How to Save updates?
 
-   ![App Configuration File](https://github.com/Nackerman97/VBA_App_Framework/blob/eb9c22940df8cccf71f946dfac338d3640e0d795/images/ConfigFile.jpg)
+   ![App Configuration File](https://github.com/Nackerman97/VBA_App_Framework/blob/4d414c9506ec1e4744fe8ed0536c72cb8f7a3706/images/ConfigFile.jpg)
 
 1. If you are listed as a developer you will have an additional set of options `(Shown Below)` to push out update to the application. You can add developers by modifying the configuration file manually in the `developer` section of the ConfigFile shown above. 
 

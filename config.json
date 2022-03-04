@@ -5,12 +5,10 @@
   "insiders-version": "1.0.1",
   "description": "BILLING TOOLS FOR AP",
   "developers": [
-    "DLEHN01",
     "NACKE08"
   ],
   "testers": [
-    "NACKE08",
-    "DLEHN01"
+    "NACKE08"
   ],
   "insiders": [
     "NACKE08"

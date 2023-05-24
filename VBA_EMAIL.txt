@@ -235,3 +235,51 @@ Public Sub Generate_ProactiveStatusEmail()
     
     End With
 End Sub
+Public Sub ReadExcelFile()
+    Dim filePath As String
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim rowNum As Long
+    
+    ' Set the file path of the Excel file
+    filePath = "C:\Path\to\your\Excel\File.xlsx"
+    
+    ' Open the Excel file
+    Set wb = Workbooks.Open(filePath)
+    
+    ' Set the worksheet to read
+    Set ws = wb.Worksheets("Sheet1") ' Replace "Sheet1" with the name of your desired sheet
+    
+    ' Read data row by row until a blank row is encountered
+    rowNum = 1 ' Start from row 1
+    
+    Do Until ws.Cells(rowNum, 1).Value = "" ' Assuming the first column determines the presence of data
+        ' Read the data from each column
+        Dim column1Value As Variant
+        Dim column2Value As Variant
+        Dim column3Value As Variant
+        Dim column4Value As Variant
+        ' Add more variables for additional columns if needed
+        
+        column1Value = ws.Cells(rowNum, 1).Value
+        column2Value = ws.Cells(rowNum, 2).Value
+        column3Value = ws.Cells(rowNum, 2).Value
+        column4Value = ws.Cells(rowNum, 2).Value
+        ' Assign values to additional variables for additional columns if needed
+        
+        ' Do something with the data
+        ' For example, display it in the Immediate window
+        Debug.Print "Row " & rowNum & ": Column 1 = " & column1Value & ", Column 2 = " & column2Value
+        Debug.Print "Row " & rowNum & ": Column 1 = " & column3Value & ", Column 2 = " & column4Value
+        Debug.Print "--------newline"
+        
+        rowNum = rowNum + 1 ' Move to the next row
+    Loop
+    
+    ' Close the Excel file without saving changes
+    wb.Close False
+    
+    ' Clean up objects
+    Set ws = Nothing
+    Set wb = Nothing
+End Sub

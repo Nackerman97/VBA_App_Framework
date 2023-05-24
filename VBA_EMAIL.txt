@@ -16,7 +16,7 @@ Public Sub Generate_EmailTemplate()
         'Header of Email
         HTMLBody = HTMLBody & "<h2>Hello Albertsons,</h2>"
         HTMLBody = HTMLBody & "<p><b>This is a template email. Designed to show how we can use VBA to send automated email regarding project performance.</b></p>"
-        HTMLBody = HTMLBody & "<p>Please reach out too <a href = 'mailto:nicholas.ackerman@albertsons.com'>@Nicholas Ackerman</a> to learn more about this process. Below are some of the things " & _
+        HTMLBody = HTMLBody & "<p>Please reach out too <a href = 'mailto:john.doe@company.com'>@Nicholas Ackerman</a> to learn more about this process. Below are some of the things " & _
         "that can be done using VBA.</p>"
         
         'START of Ordered List
@@ -216,7 +216,7 @@ Public Sub Generate_ProactiveStatusEmail()
         'Header of Email
         HTMLBody = HTMLBody & "<h2>Hello Albertsons,</h2>"
         HTMLBody = HTMLBody & "<p><b>This is a template email. Designed to show how we can use VBA to send automated email regarding project performance.</b></p>"
-        HTMLBody = HTMLBody & "<p>Please reach out too <a href = 'mailto:nicholas.ackerman@albertsons.com'>@Nicholas Ackerman</a> to learn more about this process. Below are some of the things " & _
+        HTMLBody = HTMLBody & "<p>Please reach out too <a href = 'mailto:john.doe@company.com'>@Nicholas Ackerman</a> to learn more about this process. Below are some of the things " & _
         "that can be done using VBA.</p>"
         
         'START of Ordered List

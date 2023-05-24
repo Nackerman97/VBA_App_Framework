@@ -1,0 +1,237 @@
+'Created 05/10/2023
+'BY:@Nicholas Ackerman <nicholas.ackerman@albertsons.com>
+Public Sub Generate_EmailTemplate()
+    Dim HTMLBody As String
+    Set objMail = Application.CreateItem(olMailItem)
+    
+     With objMail
+        .To = "john.doe@company.com"
+        .CC = "ohn.doe@company.com; ohn.doe@company.com; ohn.doe@company.com"
+        .Subject = "TEMPLATE_EMAIL"
+        .BodyFormat = olFormatHTML
+        
+        'Start of Email Framework
+        HTMLBody = "<HTML><style></style><BODY>"
+        
+        'Header of Email
+        HTMLBody = HTMLBody & "<h2>Hello Albertsons,</h2>"
+        HTMLBody = HTMLBody & "<p><b>This is a template email. Designed to show how we can use VBA to send automated email regarding project performance.</b></p>"
+        HTMLBody = HTMLBody & "<p>Please reach out too <a href = 'mailto:nicholas.ackerman@albertsons.com'>@Nicholas Ackerman</a> to learn more about this process. Below are some of the things " & _
+        "that can be done using VBA.</p>"
+        
+        'START of Ordered List
+        HTMLBody = HTMLBody & "<ol><li>Order Lists</li><li>Tables</li><li>Copy and Paste from Excel Files</li><li>Attachments</li><li>Snowflake Calls</li></ol>"
+
+        
+        'Signature Section of the Email
+        HTMLBody = HTMLBody & "<p>Thank you, <br>Nick</p>"
+        
+        'End of Email Framework
+        HTMLBody = HTMLBody & "</BODY></HTML>"
+        .HTMLBody = HTMLBody
+    
+        'display email
+        .Display
+    
+    End With
+End Sub
+'Created 05/10/2023
+'BY:@Nicholas Ackerman <nicholas.ackerman@albertsons.com>
+Public Sub MIR_PROACTIVE_EMAIL()
+    Dim conn As ADODB.connection
+    Dim rs As ADODB.Recordset
+    Dim rsMIR As ADODB.Recordset
+    Dim item As Variant
+    Dim counter As Integer
+    Dim HTMLBody As String
+    Dim aggMIRHHS_ID_CNT As Integer
+    Dim aggProactive_ID_CNT As Integer
+    Dim aggProactiveRow As Integer
+    'Grand totals
+    Dim aggProactiveD10 As Integer
+    Dim aggProactiveD5 As Integer
+    Dim aggProactiveEMAIL As Integer
+    
+    Set conn = New ADODB.connection
+    Set objMail = Application.CreateItem(olMailItem)
+    
+    'MIR SQL//////////////////////////////////////////////////////////////////////
+    SqlMIR = "SELECT THEME, COUNT(HHS_ID) As HHS_ID From EDM_BIZOPS_PRD.FBI.ESA_MIR_OUTPUT WHERE UPDATE_DATE = CURRENT_DATE Group BY THEME Order BY THEME ASC"
+    'PROACTIVE SQL//////////////////////////////////////////////////////////////////////
+    SqlPROACTIVE = "WITH OUTPUT AS (SELECT CASE WHEN GREATEST(ORDER_ACCURACY_FINAL, ORDER_DELIVERY_FINAL_INC_C_R, ORDER_CONDITION_FINAL) = 1 THEN 'A - PERFECT' " & _
+    "WHEN GREATEST(ORDER_ACCURACY_FINAL, ORDER_DELIVERY_FINAL_INC_C_R, ORDER_CONDITION_FINAL) = 2 THEN 'B - GREAT' WHEN GREATEST(ORDER_ACCURACY_FINAL, ORDER_DELIVERY_FINAL_INC_C_R, ORDER_CONDITION_FINAL) = 3 THEN 'C - POOR' END AS THEME, " & _
+    "TEST_EXPERIENCE,CASE WHEN CUSTOMER_SEGMENT = 'BNC to ACI' OR CUSTOMER_SEGMENT = 'BNC to eComm' THEN ' A - BNC' " & _
+    "WHEN ECOMM_TXNS_IN_LAST_6_MONTHS = '5+ txns' THEN 'B - EXISTING > 4_TXNS' Else 'C - EXISTING<=4_TXNS' END AS CUSTOMER_SEGMENT, ORDER_ID From EDM_BIZOPS_PRD.FBI.ESA_PROACTIVE_COMMUNICATION_ANALYSIS_OUTPUT " & _
+    "WHERE TEST_EXPERIENCE <> 'Control' AND UPDATE_DATE = CURRENT_DATE) SELECT THEME, " & _
+    "CUSTOMER_SEGMENT,COUNT(DISTINCT CASE WHEN TEST_EXPERIENCE = '$10 off' THEN ORDER_ID END) AS NUM_ORDERS_10_OFF,COUNT(DISTINCT CASE WHEN TEST_EXPERIENCE = '$5 off' THEN ORDER_ID END) AS NUM_ORDERS_5_OFF, " & _
+    "COUNT(DISTINCT CASE WHEN TEST_EXPERIENCE = 'No offer' THEN ORDER_ID END) AS NUM_ORDERS_EMAIL_ONLY From OUTPUT Group BY THEME, CUSTOMER_SEGMENT Order BY THEME, CUSTOMER_SEGMENT"
+
+    
+    Set rs = QuerySnowFlake(SqlPROACTIVE)
+    Set rsMIR = QuerySnowFlake(SqlMIR)
+    
+    'VALIDATION
+    If Weekday(Date) = 1 Or Weekday(Date) = 3 Or Weekday(Date) = 5 Or Weekday(Date) = 7 Or Weekday(Date) = 8 Then
+        MsgBox "This Process can only be run on a Monday, Wednesday, or Friday"
+        Exit Sub
+    End If
+    
+    If IsRecordsetEmpty(rs) Then
+        MsgBox ("Proactive Data Does Not Exist")
+        Exit Sub
+    End If
+    
+    If IsRecordsetEmpty(rsMIR) Then
+        MsgBox ("MIR Data Does Not Exist")
+        Exit Sub
+    End If
+    
+    
+    'DEVELOPING OF THE EMAIL
+    With objMail
+        .To = "john.doe@company.com"
+        .CC = "john.doe@company.com; john.doe@company.com; ohn.doe@company.com"
+        .Subject = "Customer Retention Iteration Update"
+        .BodyFormat = olFormatHTML
+        
+        HTMLBody = "<HTML><style>table, th, td, tr {border: 1px solid black; padding: 7px; border-collapse: collapse; text-align: center;} .rowi {background-color: #add8e6;} .rowh {background-color: #d3d3d3;}</style><BODY>"
+        HTMLBody = HTMLBody & "<p>Hi Ngan,</p>"
+        HTMLBody = HTMLBody & "<p>The MIR and Proactive Communication Output files have been updated in Snowflake at the view <b> EDM_VIEWS_PRD.DW_BIZOPS_VIEWS.ESA_MIR_PROACTIVE_OUTPUT.</b></p>"
+        HTMLBody = HTMLBody & "<p><a href = 'mailto:john.doe@company.com'>@John Doe</a> / <a href = 'mailto:john.doe@company.com'>@John Doe</a>: Please find the distribution for the themes below:</p>"
+
+        ''''''''''''''''''''''''''''''''''
+        ''This is the loop for the MIR Data
+        ''''''''''''''''''''''''''''''''''
+        HTMLBody = HTMLBody & "<table  border: 1px solid white; border-collapse: collapse;>"
+        HTMLBody = HTMLBody & "<tr class = rowh><b><td>THEME</td><td>HOUSEHOLD</td></b></tr>"
+        Do While Not rsMIR.EOF
+            HTMLBody = HTMLBody & "<tr><td>" & rsMIR.Fields("THEME").Value & "</td><td>" & rsMIR.Fields("HHS_ID").Value & "</td></tr>"
+            aggMIRHHS_ID_CNT = aggMIRHHS_ID_CNT + CInt(rsMIR.Fields("HHS_ID").Value)
+            rsMIR.MoveNext
+        Loop
+        HTMLBody = HTMLBody & "<tr class = rowi><b><td>Grand Total</td><td>" & CStr(aggMIRHHS_ID_CNT) & "</td></b></tr>"
+        HTMLBody = HTMLBody & "</table>"
+        HTMLBody = HTMLBody & "<p>MIR Output -Total count is <b>" + CStr(aggMIRHHS_ID_CNT) + "</b> (Removal of Jewel - Osco Households). </p>"
+        
+        ''''''''''''''''''''''''''''''''''
+        'This will be the loop for the proactive data
+        ''''''''''''''''''''''''''''''''''
+        Dim ProactivePerfectD10 As Integer
+        Dim ProactiveGreatD10 As Integer
+        Dim ProactivePoorD10 As Integer
+        Dim ProactivePerfectD5 As Integer
+        Dim ProactiveGreatD5 As Integer
+        Dim ProactivePoorD5 As Integer
+        Dim ProactivePerfectEMAIL As Integer
+        Dim ProactiveGreatEMAIL As Integer
+        Dim ProactivePoorEMAIL As Integer
+        Dim ProactivePerfectTotal As Integer
+        Dim ProactiveGreatTotal As Integer
+        Dim ProactivePoorTotal As Integer
+        
+        
+        'Inital Loop Logic to aggregate parent total data
+        Do While Not rs.EOF
+            If rs.Fields("THEME").Value = "A - PERFECT" Then
+                'Perfect Totals
+                ProactivePerfectD10 = ProactivePerfectD10 + CInt(rs.Fields("NUM_ORDERS_10_OFF").Value)
+                ProactivePerfectD5 = ProactivePerfectD5 + CInt(rs.Fields("NUM_ORDERS_5_OFF").Value)
+                ProactivePerfectEMAIL = ProactivePerfectEMAIL + CInt(rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value)
+            ElseIf rs.Fields("THEME").Value = "B - GREAT" Then
+                'Great Totals
+                ProactiveGreatD10 = ProactiveGreatD10 + CInt(rs.Fields("NUM_ORDERS_10_OFF").Value)
+                ProactiveGreatD5 = ProactiveGreatD5 + CInt(rs.Fields("NUM_ORDERS_5_OFF").Value)
+                ProactiveGreatEMAIL = ProactiveGreatEMAIL + CInt(rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value)
+            ElseIf rs.Fields("THEME").Value = "C - POOR" Then
+                'Poor Totals
+                ProactivePoorD10 = ProactivePoorD10 + CInt(rs.Fields("NUM_ORDERS_10_OFF").Value)
+                ProactivePoorD5 = ProactivePoorD5 + CInt(rs.Fields("NUM_ORDERS_5_OFF").Value)
+                ProactivePoorEMAIL = ProactivePoorEMAIL + CInt(rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value)
+            End If
+            rs.MoveNext
+        Loop
+        
+        'Aggregated data for parent columns perfect, average, poor
+        ProactivePerfectTotal = ProactivePerfectD10 + ProactivePerfectD5 + ProactivePerfectEMAIL
+        ProactiveGreatTotal = ProactiveGreatD10 + ProactiveGreatD5 + ProactiveGreatEMAIL
+        ProactivePoorTotal = ProactivePoorD10 + ProactivePoorD5 + ProactivePoorEMAIL
+        
+        rs.MoveFirst
+        HTMLBody = HTMLBody & "<table  border: 1px solid white; border-collapse: collapse;>"
+        HTMLBody = HTMLBody & "<tr class = rowh><b><td>BASKET_HEALTH</td><td>CUSTOMER_SEGMENT</td><td>$10 Offer Orders</td><td>$5 Offer Orders</td><td>Email Only Orders</td><td>Row Totals</td></b></tr>"
+        Do While Not rs.EOF
+            aggProactiveRow = 0
+            If rs.Fields("THEME").Value = "A - PERFECT" And rs.Fields("CUSTOMER_SEGMENT").Value = " A - BNC" Then
+                HTMLBody = HTMLBody & "<tr class = rowi><b><td colspan = '2'>" & rs.Fields("THEME").Value & "</td><td>" & CStr(ProactivePerfectD10) & "</td><td>" & CStr(ProactivePerfectD5) & "</td><td>" & CStr(ProactivePerfectEMAIL) & "</td><td>" & CStr(ProactivePerfectTotal) & "</td></b></tr>"
+            ElseIf rs.Fields("THEME").Value = "B - GREAT" And rs.Fields("CUSTOMER_SEGMENT").Value = " A - BNC" Then
+                HTMLBody = HTMLBody & "<tr class = rowi><b><td colspan = '2'>" & rs.Fields("THEME").Value & "</td><td>" & CStr(ProactiveGreatD10) & "</td><td>" & CStr(ProactiveGreatD5) & "</td><td>" & CStr(ProactiveGreatEMAIL) & "</td><td>" & CStr(ProactiveGreatTotal) & "</td></b></tr>"
+            ElseIf rs.Fields("THEME").Value = "C - POOR" And rs.Fields("CUSTOMER_SEGMENT").Value = " A - BNC" Then
+                HTMLBody = HTMLBody & "<tr class = rowi><b><td colspan = '2'>" & rs.Fields("THEME").Value & "</td><td>" & CStr(ProactivePoorD10) & "</td><td>" & CStr(ProactivePoorD5) & "</td><td>" & CStr(ProactivePoorEMAIL) & "</td><td>" & CStr(ProactivePoorTotal) & "</td></b></tr>"
+            End If
+            
+            HTMLBody = HTMLBody & "<tr><td>" & rs.Fields("THEME").Value & "</td><td>" & rs.Fields("CUSTOMER_SEGMENT").Value & "</td><td>" & rs.Fields("NUM_ORDERS_10_OFF").Value & "</td><td>" & rs.Fields("NUM_ORDERS_5_OFF").Value & "</td><td>" & rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value & "</td>"
+            aggProactiveRow = CInt(rs.Fields("NUM_ORDERS_10_OFF").Value) + CInt(rs.Fields("NUM_ORDERS_5_OFF").Value) + CInt(rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value)
+            HTMLBody = HTMLBody & "<td>" + CStr(aggProactiveRow) + "</td></tr>"
+            aggProactive_ID_CNT = aggProactive_ID_CNT + CInt(rs.Fields("NUM_ORDERS_10_OFF").Value) + CInt(rs.Fields("NUM_ORDERS_5_OFF").Value) + CInt(rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value)
+            
+            'Grand totals
+            aggProactiveD10 = aggProactiveD10 + CInt(rs.Fields("NUM_ORDERS_10_OFF").Value)
+            aggProactiveD5 = aggProactiveD5 + CInt(rs.Fields("NUM_ORDERS_5_OFF").Value)
+            aggProactiveEMAIL = aggProactiveEMAIL + CInt(rs.Fields("NUM_ORDERS_EMAIL_ONLY").Value)
+            
+            rs.MoveNext
+        Loop
+        
+        HTMLBody = HTMLBody & "<tr class = rowi><b><td colspan = '2'>Columns Total</td><td>" & CStr(aggProactiveD10) & "</td><td>" & CStr(aggProactiveD5) & "</td><td>" & CStr(aggProactiveEMAIL) & "</td><td>" & CStr(aggProactive_ID_CNT) & "</td></b></tr>"
+        HTMLBody = HTMLBody & "</table>"
+        HTMLBody = HTMLBody & "<p>Proactive Communication Output -Total count is <b>" + CStr(aggProactive_ID_CNT) + "</b> (Limited to Jewel - Osco Households).</p>"
+        
+        'Signature Section of the Email
+        HTMLBody = HTMLBody & "<p>Thank you, <br>John</p>"
+        HTMLBody = HTMLBody & "</BODY></HTML>"
+        .HTMLBody = HTMLBody
+        
+    
+        'display email
+        .Display
+    
+    End With
+    
+End Sub
+'Created 05/10/2023
+'BY:@Nicholas Ackerman <nicholas.ackerman@albertsons.com>
+Public Sub Generate_ProactiveStatusEmail()
+    Dim HTMLBody As String
+    Set objMail = Application.CreateItem(olMailItem)
+    
+     With objMail
+        .To = "john.doe@company.com"
+        .CC = "john.doe@company.com; john.doe@company.com; john.doe@company.com"
+        .Subject = "TEMPLATE_EMAIL"
+        .BodyFormat = olFormatHTML
+        
+        'Start of Email Framework
+        HTMLBody = "<HTML><style></style><BODY>"
+        
+        'Header of Email
+        HTMLBody = HTMLBody & "<h2>Hello Albertsons,</h2>"
+        HTMLBody = HTMLBody & "<p><b>This is a template email. Designed to show how we can use VBA to send automated email regarding project performance.</b></p>"
+        HTMLBody = HTMLBody & "<p>Please reach out too <a href = 'mailto:nicholas.ackerman@albertsons.com'>@Nicholas Ackerman</a> to learn more about this process. Below are some of the things " & _
+        "that can be done using VBA.</p>"
+        
+        'START of Ordered List
+        HTMLBody = HTMLBody & "<ol><li>Order Lists</li><li>Tables</li><li>Copy and Paste from Excel Files</li><li>Attachments</li><li>Snowflake Calls</li></ol>"
+
+        
+        'Signature Section of the Email
+        HTMLBody = HTMLBody & "<p>Thank you, <br>Nick</p>"
+        
+        'End of Email Framework
+        HTMLBody = HTMLBody & "</BODY></HTML>"
+        .HTMLBody = HTMLBody
+    
+        'display email
+        .Display
+    
+    End With
+End Sub
